@@ -1,0 +1,41 @@
+int a[100];
+
+int fa (int n) {
+	int x;
+	x = 1;
+	return (n - x) * 7;
+}
+
+int fb (int n) {
+	int x;
+	x = 1;
+	return (n + x) * 7;
+}
+
+void main (void) {
+	int i;
+	i = 0;
+	while (i < 100) {
+		int b;
+		b = i;
+		if ( b < 50) {
+			int c;
+			c = fa(b);
+			if (c < 25) {
+				int d;
+				d = c;
+				a[b] = d;
+			}
+		}
+		else {
+			int c;
+			c = fb(b);
+			if (c < 25) {
+				int d;
+				d = c;
+				a[b] = d;
+			}
+		}
+		i = b + 1;
+	}
+}

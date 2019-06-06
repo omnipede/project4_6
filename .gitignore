@@ -1,0 +1,7 @@
+project4_6
+*.o
+*.swp
+cm.tab.c 
+cm.tab.h 
+cm.output
+lex.yy.c
