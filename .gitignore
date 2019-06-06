@@ -5,3 +5,4 @@ cm.tab.c
 cm.tab.h 
 cm.output
 lex.yy.c
+*.tm
