@@ -146,6 +146,7 @@ static void insertNode (TreeNode* t) {
 					break;
 				case VarK:
 					location = calcLoc(t);
+					t->memloc = location;
 					/* First declared. */
 					if (st_lookup_local(t->attr.name) == NULL)
 						st_insert(t->attr.name, t->lineno, location, 
@@ -195,7 +196,10 @@ static void postInsertNode (TreeNode* t) {
 	else if (t->nodekind == DeclK && t->kind.decl == ParamK) {
 		/* directly adjust memory location. */
 		BucketList l = st_lookup(t->attr.name);
-		if (l) l->memloc = calcLoc(t);
+		if (l) {
+			l->memloc = calcLoc(t);
+			t->memloc = l->memloc;
+		}
 	}
 	return;
 }

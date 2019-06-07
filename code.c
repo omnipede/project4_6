@@ -4,7 +4,7 @@
 void emitComment (char* c) {
 	if (c == NULL) return;
 	if (TraceCode) {
-		fprintf(code, "#%s\n", c);
+		fprintf(code, "\n#%s\n", c);
 	}
 }
 

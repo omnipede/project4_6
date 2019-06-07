@@ -58,6 +58,10 @@ typedef struct treeNode {
 	} attr;
 	ExpType type;
 	int len;
+
+	/* Fields for code generation */
+	int memloc;
+	int isGlobal;
 } TreeNode;
 
 extern int EchoSource;
