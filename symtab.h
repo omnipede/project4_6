@@ -33,6 +33,7 @@ typedef struct BucketListRec {
 	char VPF;
 	int type;
 	int len;
+	int level;
 	TreeNode* params;
 	struct BucketListRec* next;
 }* BucketList;

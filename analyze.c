@@ -125,8 +125,15 @@ static void insertNode (TreeNode* t) {
 					if (st_lookup (t->attr.name) == NULL)
 						symbolError(t->lineno, "Undeclared symbol.");
 					/* If declared, append line number. */
-					else 
+					else { 
 						st_insert_global (t->attr.name, t->lineno);
+						t->memloc = st_lookup(t->attr.name)->memloc;
+						t->len = st_lookup(t->attr.name)->len;
+						if (st_lookup(t->attr.name)->level == 0)
+							t->isGlobal = 1;
+						else
+							t->isGlobal = 0;
+					}
 					break;
 				case CallK:
 					/* If not declared yet, */
@@ -147,6 +154,12 @@ static void insertNode (TreeNode* t) {
 				case VarK:
 					location = calcLoc(t);
 					t->memloc = location;
+					if (scope_top() != NULL) {
+						if (scope_top()->level == 0)
+							t->isGlobal = 1;
+						else
+							t->isGlobal = 0;
+					}
 					/* First declared. */
 					if (st_lookup_local(t->attr.name) == NULL)
 						st_insert(t->attr.name, t->lineno, location, 

@@ -6,34 +6,192 @@
 static int regSize = 4;
 static char buffer[100];
 
-static void cGen(TreeNode*);
+static int cGen(TreeNode*);
+
+static int allocGlobal (int inc) {
+	static int ret = 0x10000000;
+	/*
+	if (inc >= 0) {
+		ret += inc;
+		return ret - inc;
+	}
+	else {
+		return ret;
+	}*/
+	ret += inc;
+	return ret - inc;
+}
+
+static int retGlobal (int addr, int size) {
+	int org = 0x10000000;
+	return (org + addr - size);
+}
 
 static int genLabel (void) {
 	static int label = 0;
 	return (label += 1);
 }
 
-static void genStmtCode (TreeNode* t) {
+static int genStmtCode (TreeNode* t) {
+	int current_stack = 0;
+	if (t == NULL)
+		return current_stack;
 	switch (t->kind.stmt) {
 		case CompoundK:
+			emitComment("Compound statement");
+			emitComment("Local var declaration");
+			int allocated_stack = cGen(t->child[0]);
+			cGen(t->child[1]);
+
+			emitComment("Recover local stack");
+			sprintf(buffer, "addiu $sp, $sp, %d", allocated_stack);
+			emitCode(buffer);
 			break;
 		default: ;
 	}
+	return current_stack;
 }
 
-static void genExpCode (TreeNode* t) {
+static int genExpCode (TreeNode* t) {
+	int current_stack = 0;
+	if (t == NULL)
+		return current_stack;
+	switch (t->kind.exp) {
+		case OpK:
+			if (t->child[0] == NULL || t->child[1] == NULL) break;
+			/* Assign operation */
+			if (t->attr.op == ASSIGN) {
+				cGen(t->child[1]);
+				if (t->child[0]->child[0] == NULL) {
+					if (t->child[0]->isGlobal)
+						sprintf(buffer, "sw $v0, %d", retGlobal(t->child[0]->memloc, sizeof(int)));
+					else
+						sprintf(buffer, "sw $v0, %d($fp)", t->child[0]->memloc - 9 * regSize);
+					emitCode(buffer);
+				}
+				else {
+					sprintf(buffer, "move $s1, $v0"); 
+					emitCode(buffer);
+					cGen(t->child[0]->child[0]);
+					sprintf(buffer, "li $s0, %lu", sizeof(int));
+					emitCode(buffer);
+					sprintf(buffer, "mul $s0, $v0, $s0");
+					emitCode(buffer);
+					if (t->child[0]->isGlobal)
+						sprintf(buffer, "li $v0, %d", 
+								retGlobal(t->child[0]->memloc, t->child[0]->len * sizeof(int)) );
+					else
+						sprintf(buffer, "addiu $v0, $fp, %d", t->child[0]->memloc - 9 * regSize);
+					emitCode(buffer);
+					sprintf(buffer, "add $v0, $v0, $s0");
+					emitCode(buffer);
 
+					sprintf(buffer, "sw $s1, 0($v0)");
+					emitCode(buffer);
+					sprintf(buffer, "move $v0, $s1");
+					emitCode(buffer);
+				}
+				break;
+			}
+			/* Left operand */
+			cGen(t->child[0]);
+			sprintf(buffer, "addiu $sp, $sp, -%lu", sizeof(int));
+			emitCode(buffer);
+			sprintf(buffer, "sw $v0, 0($sp)");
+			emitCode(buffer);
+			/* Right operand */
+			cGen(t->child[1]);
+			sprintf(buffer, "lw $s0, 0($sp)");
+			emitCode(buffer);
+			sprintf(buffer, "addiu $sp, $sp, %lu", sizeof(int));
+			emitCode(buffer);
+
+			switch(t->attr.op) {
+				case PLUS: sprintf(buffer, "add $v0, $s0, $v0"); break;
+				case MINUS: sprintf(buffer, "sub $v0, $s0, $v0"); break;
+				case TIMES: sprintf(buffer, "mul $v0, $s0, $v0"); break;
+				case OVER: sprintf(buffer, "div $v0, $s0, $v0"); break;
+				case LT: sprintf(buffer, "slt $v0, $s0, $v0"); break;
+				case LE: sprintf(buffer, "sle $v0, $s0, $v0"); break;
+				case GT: sprintf(buffer, "sgt $v0, $s0, $v0"); break;
+				case GE: sprintf(buffer, "sge $v0, $s0, $v0"); break;
+				case EQ: sprintf(buffer, "seq $v0, $s0, $v0"); break;
+				case NE: sprintf(buffer, "sne $v0, $s0, $v0"); break;
+				default: ;
+			}
+			emitCode(buffer);
+			break;
+		case IdK:
+			if (t->child[0] == NULL) {
+				if (t->isGlobal)
+					sprintf(buffer, "lw $v0, %d", retGlobal(t->memloc, sizeof(int)));
+				else
+					sprintf(buffer, "lw $v0, %d($fp)", (t->memloc - 9 * regSize));	
+				emitCode(buffer);
+			}
+			else { 
+				/* Array subscription calc */
+				cGen(t->child[0]);
+				sprintf(buffer, "li $s0, %lu", sizeof(int));
+				emitCode(buffer);
+				sprintf(buffer, "mul $s0, $v0, $s0");
+				emitCode(buffer);
+				/* Array calc */
+				printf("%d\n", t->len);
+				if (t->isGlobal)
+					sprintf(buffer, "li $v0, %d", retGlobal(t->memloc, t->len * sizeof(int)) );
+				else
+					sprintf(buffer, "addiu $v0, $fp, %d", (t->memloc - 9 * regSize));
+				emitCode(buffer);
+				sprintf(buffer, "add $v0, $v0, $s0");
+				emitCode(buffer);
+				sprintf(buffer, "lw $v0, 0($v0)");
+				emitCode(buffer);
+			}
+			break;
+		case ConstK:
+			sprintf(buffer, "li $v0, %d", t->attr.val);
+			emitCode(buffer);
+			break;
+		case CallK:
+			break;
+		default: ;
+	}
+
+	return current_stack;
 }
 
-static void genDeclCode (TreeNode* t) {
+static int genDeclCode (TreeNode* t) {
 	
 	int i;
 	int clean_label = 0;
+	int current_stack = 0;
 	if (t == NULL) 
-		return;
+		return current_stack;
 
 	switch(t->kind.decl) {
 		case VarK:
+			if (t->child[0] == NULL) break;
+			if (t->isGlobal) {
+				/* Global variable declaration */
+				if (t->child[0]->type != Array) 
+					t->memloc = allocGlobal (sizeof(int));
+				else
+					t->memloc = allocGlobal (sizeof(int) * t->len);
+			}
+			else {
+				/* Local variable declaration */
+				if (t->child[0]->type != Array) {
+					sprintf(buffer, "addiu $sp, $sp, %d", -sizeof(int));
+					emitCode(buffer);
+					current_stack += sizeof(int);
+				}
+				else {
+					sprintf(buffer, "addiu $sp, $sp, %d", -regSize * t->child[0]->len);
+					emitCode(buffer);
+					current_stack += regSize * t->child[0]->len;
+				}
+			}
 			break;
 		case FunK:
 			/* Set function label. */
@@ -48,14 +206,18 @@ static void genDeclCode (TreeNode* t) {
 
 			/* Save registers */
 			emitComment("Save registers");
+			/* Save fp */
 			sprintf(buffer, "sw $fp, %d($sp)", 0);
-			emitCode(buffer);			
+			emitCode(buffer);
+			/* Save s0 ~ s7 */
 			for (i = 0; i < 8; i++) {
 				sprintf(buffer, "sw $s%d, %d($sp)", i, (i+1) * regSize);
 				emitCode(buffer);
 			}
+			/* Save ra */
 			sprintf(buffer, "sw $ra, %d($sp)", 9 * regSize);
 			emitCode(buffer);
+			/* Set fp to top of stack frame */
 			sprintf(buffer, "addiu $fp, $sp, %d", 10 * regSize);
 			emitCode(buffer);
 
@@ -68,18 +230,21 @@ static void genDeclCode (TreeNode* t) {
 			emitComment("Recover stack");
 			sprintf(buffer, "L%d:", clean_label);
 			emitCode(buffer);
+			/* Set sp to end of stack frame */
 			sprintf(buffer, "addiu $sp, $fp, %d\n", -10 * regSize);
 			emitCode(buffer);
-
-			/* Recover registers */
+			/* Recover fp */
 			sprintf(buffer, "lw $fp, %d($sp)", 0 * regSize);
 			emitCode(buffer);
+			/* Recover s0 ~ s7 */
 			for (i = 0; i < 8; i++) {
 				sprintf(buffer, "lw $s%d, %d($sp)", i, (i+1) * regSize);
 				emitCode(buffer);
 			}
+			/* Recover ra */
 			sprintf(buffer, "lw $ra, %d($sp)", 9 * regSize);
 			emitCode(buffer);
+			/* Recover stack frame */
 			sprintf(buffer, "addiu $sp, $sp, %d", 10 * regSize);
 			emitCode(buffer);
 
@@ -92,30 +257,34 @@ static void genDeclCode (TreeNode* t) {
 			break;
 		default: ;
 	}
+
+	return current_stack;
 }
 
 /* Procedure cGen recursively generates code by
  * tree traversal
  */
-static void cGen (TreeNode* t) {
+static int cGen (TreeNode* t) {
 
+	int current_stack = 0;
 	if (t == NULL) 
-		return;
+		return current_stack;
 
 	switch(t ->nodekind) {
 		case StmtK:
-			genStmtCode(t);
+			current_stack += genStmtCode(t);
 			break;
 		case ExpK:
-			genExpCode(t);
+			current_stack += genExpCode(t);
 			break;
 		case DeclK:
-			genDeclCode(t);
+			current_stack += genDeclCode(t);
 			break;
 		default: ;
 	}
-	cGen(t->sibling);
-	return;
+	current_stack += cGen(t->sibling);
+
+	return current_stack;
 }
 
 /* Procedure codeGen generates code to a code file

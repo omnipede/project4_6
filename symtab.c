@@ -121,6 +121,7 @@ void st_insert (char* name, int lineno, int loc, char VPF, int type, int len, Tr
 		l->VPF = VPF;
 		l->type = type;
 		l->len = len;
+		l->level = scope_top()->level;
 		l->params = params;
 
 		l->next = scope_top()->hashTable[h];
