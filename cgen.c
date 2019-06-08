@@ -137,7 +137,6 @@ static int genExpCode (TreeNode* t) {
 				sprintf(buffer, "mul $s0, $v0, $s0");
 				emitCode(buffer);
 				/* Array calc */
-				printf("%d\n", t->len);
 				if (t->isGlobal)
 					sprintf(buffer, "li $v0, %d", retGlobal(t->memloc, t->len * sizeof(int)) );
 				else
