@@ -61,25 +61,33 @@ static int genExpCode (TreeNode* t) {
 			if (t->child[0] == NULL || t->child[1] == NULL) break;
 			/* Assign operation */
 			if (t->attr.op == ASSIGN) {
+				/* Generate right operand code */
 				cGen(t->child[1]);
+				/* If left operand is not array */
 				if (t->child[0]->child[0] == NULL) {
+					/* If left operand is global var */
 					if (t->child[0]->isGlobal)
 						sprintf(buffer, "sw $v0, %d", retGlobal(t->child[0]->memloc, sizeof(int)));
+					/* If left operand is local var. */
 					else
 						sprintf(buffer, "sw $v0, %d($fp)", t->child[0]->memloc - 9 * regSize);
 					emitCode(buffer);
 				}
+				/* Else if array */
 				else {
 					sprintf(buffer, "move $s1, $v0"); 
 					emitCode(buffer);
+					/* Generate left operand's array subscription code */
 					cGen(t->child[0]->child[0]);
 					sprintf(buffer, "li $s0, %lu", sizeof(int));
 					emitCode(buffer);
 					sprintf(buffer, "mul $s0, $v0, $s0");
 					emitCode(buffer);
+					/* If left operand is global */
 					if (t->child[0]->isGlobal)
 						sprintf(buffer, "li $v0, %d", 
 								retGlobal(t->child[0]->memloc, t->child[0]->len * sizeof(int)) );
+					/* Else if left operand is local */
 					else
 						sprintf(buffer, "addiu $v0, $fp, %d", t->child[0]->memloc - 9 * regSize);
 					emitCode(buffer);
