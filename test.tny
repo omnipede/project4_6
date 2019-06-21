@@ -1,5 +1,7 @@
+void f (void) {
+
+}
 void main (void) {
 	int x;
-	x = 7 + 2 * 3;
-	x = 10;
+	x = input();
 }

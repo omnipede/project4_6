@@ -34,9 +34,12 @@ static int genLabel (void) {
 
 static int genStmtCode (TreeNode* t) {
 	int current_stack = 0;
+	int L_exit, L_false;
+	int L_cmp, L_loop;
 	if (t == NULL)
 		return current_stack;
 	switch (t->kind.stmt) {
+		/* Compound statement code */
 		case CompoundK:
 			emitComment("Compound statement");
 			emitComment("Local var declaration");
@@ -45,6 +48,50 @@ static int genStmtCode (TreeNode* t) {
 
 			emitComment("Recover local stack");
 			sprintf(buffer, "addiu $sp, $sp, %d", allocated_stack);
+			emitCode(buffer);
+			break;
+		/* Selection statement code */
+		case IfK: 
+			/* Compute expression */
+			emitComment ("Selection statement");
+			emitComment ("Selection statement Expression");
+			cGen(t->child[0]);
+			L_exit = genLabel();
+			L_false = genLabel();
+			sprintf(buffer, "beqz $v0, L%d", L_false);
+			emitCode(buffer);
+
+			/* If part */
+			emitComment ("Selection statement If part");
+			cGen(t->child[1]);
+			sprintf(buffer, "j L%d", L_exit);
+			emitCode(buffer);
+
+			/* ELSE part */
+			sprintf(buffer, "L%d:", L_false);
+			emitCode(buffer);
+			emitComment ("Selection statement ELSE part");
+			cGen(t->child[2]);
+			sprintf(buffer, "L%d:", L_exit);
+			emitCode(buffer);
+			break;
+
+		/* Iteration statement. */
+		case WhileK: 
+			emitComment ("While statement");
+			L_cmp = genLabel ();
+			L_loop = genLabel ();
+			sprintf(buffer, "j L%d", L_cmp);
+			emitCode(buffer);
+
+			sprintf(buffer, "L%d:", L_loop);
+			emitCode(buffer);
+			cGen(t->child[1]);
+
+			sprintf(buffer, "L%d:", L_cmp);
+			emitCode(buffer);
+			cGen(t->child[0]);
+			sprintf(buffer, "bnez $v0, L%d", L_loop);
 			emitCode(buffer);
 			break;
 		default: ;
@@ -161,6 +208,23 @@ static int genExpCode (TreeNode* t) {
 			emitCode(buffer);
 			break;
 		case CallK:
+			if (strcmp(t->attr.name, "output") == 0) {
+
+			}
+			if (strcmp(t->attr.name, "input") == 0) {
+				sprintf(buffer, "input: ");
+				emitCode(buffer);
+				sprintf(buffer, "li $v0, 4");
+				emitCode(buffer);
+				sprintf(buffer, "la $a0, input_str");
+				emitCode(buffer);
+				sprintf(buffer, "syscall");
+				emitCode(buffer);
+				sprintf(buffer, "li $v0, 5");
+				emitCode(buffer);
+				sprintf(buffer, "syscall");
+				emitCode(buffer);
+			}
 			break;
 		default: ;
 	}
@@ -201,6 +265,10 @@ static int genDeclCode (TreeNode* t) {
 			}
 			break;
 		case FunK:
+			/* If output or input, ignore. */
+			if (strcmp(t->attr.name, "output") == 0 || strcmp(t->attr.name, "input") ==0)
+				break;
+
 			/* Set function label. */
 			emitComment("Function declaration");
 			sprintf(buffer, "%s:", t->attr.name);
