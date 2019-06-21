@@ -440,6 +440,7 @@ void codeGen (TreeNode* syntaxTree, char* codefile) {
 	emitCode("newline_character: .asciiz \"\\n\"");
 
 	emitCode("\n.text");
+	emitCode(".globl main");
 	cGen(syntaxTree);
 	return;
 }
