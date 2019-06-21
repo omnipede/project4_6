@@ -33,8 +33,8 @@ FILE* code;
 
 int EchoSource = FALSE;
 int TraceScan = FALSE;
-int TraceParse = FALSE;
-int TraceAnalyze = FALSE;
+int TraceParse = TRUE;
+int TraceAnalyze = TRUE;
 int TraceCode = TRUE;
 
 int Error = FALSE;
@@ -69,6 +69,7 @@ int main (int argc, char* argv[]) {
 
 #if !NO_ANALYZE
 	if (! Error) {	
+		insertIOFunctions (&syntaxTree);
 		if (TraceAnalyze) fprintf(listing, "\nBuilding Synbol Table ...\n");
 		buildSymtab(syntaxTree);
 		if (TraceAnalyze) fprintf(listing, "\nChecking Types ...\n");

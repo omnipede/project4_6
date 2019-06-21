@@ -1,6 +1,7 @@
 #include "globals.h"
 #include "symtab.h"
 #include "analyze.h"
+#include "util.h"
 
 /* counter for variable memory locations. */
 static int location = 0;
@@ -148,9 +149,9 @@ static void insertNode (TreeNode* t) {
 			}
 			break;
 		case DeclK:
+			if (t->child[0] == NULL)
+				break;
 			switch(t->kind.decl) {
-				if (t->child[0] == NULL)
-					break;
 				case VarK:
 					location = calcLoc(t);
 					t->memloc = location;
@@ -214,6 +215,59 @@ static void postInsertNode (TreeNode* t) {
 			t->memloc = l->memloc;
 		}
 	}
+	return;
+}
+
+/* Function insertIOFunctions inserts 
+ * input() and output() function declaration to syntaxTree
+ */
+void insertIOFunctions (TreeNode **syntaxTree) {
+
+	/* Make output function */
+	TreeNode* output = newDeclNode (FunK);
+	output->attr.name = copyString("output");
+	output->lineno = -1;
+
+	TreeNode* output_type = newTypeNode (VoidK);
+	output_type->type = Void;
+	output_type->len = 0;
+
+	TreeNode* output_param = newDeclNode (ParamK);
+	output_param->attr.name = copyString("output_param");
+	output_param->child[0] = newTypeNode (IntK);
+	output_param->child[0]->type = Integer;
+	output_param->child[0]->len = 0;
+
+	output->child[0] = output_type;
+	output->child[1] = output_param;
+	output->child[2] = newStmtNode(CompoundK);
+
+	/* Make input function */
+	TreeNode* input = newDeclNode (FunK);
+	input->attr.name = copyString("input");
+	input->lineno = -1;
+
+	TreeNode* input_type = newTypeNode (IntK);
+	input_type->type = Integer;
+	input_type->len = 0;
+
+	TreeNode* input_body = newStmtNode (CompoundK);
+	input_body->child[0] = NULL;
+	input_body->child[1] = newStmtNode(ReturnK);
+	input_body->child[1]->child[0] = newExpNode(ConstK);
+	input_body->child[1]->child[0]->attr.val = 0;
+	input_body->child[1]->child[0]->type = Integer;
+
+	input->child[0] = input_type;
+	input->child[1] = NULL;
+	input->child[2] = input_body;
+	
+	/* Insert output() & input() to syntax tree */
+	output->sibling = *syntaxTree;
+	*syntaxTree = output;
+
+	input->sibling = *syntaxTree;
+	*syntaxTree = input;
 	return;
 }
 
