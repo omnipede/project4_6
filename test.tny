@@ -1,7 +1,26 @@
-void f (void) {
+int globalArray[100];
 
+int func (int x) {
+	return (x * 2) + 1;
 }
+
 void main (void) {
+	int i;
 	int x;
+
 	x = input();
+	i = 0;
+	while(i < x) {
+		globalArray[i] = func(i);
+		i = i + 1;
+	}
+
+	i = 0;
+	while (i < x) {
+		if ( globalArray[i] < 10) 
+			output(globalArray[i]);
+		else
+			output(globalArray[i] - 2 * globalArray[i]);
+		i = i + 1;
+	}
 }
