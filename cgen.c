@@ -117,7 +117,7 @@ static int genExpCode (TreeNode* t) {
 						sprintf(buffer, "sw $v0, %d", retGlobal(t->child[0]->memloc, sizeof(int)));
 					/* If left operand is local var. */
 					else
-						sprintf(buffer, "sw $v0, %d($fp)", t->child[0]->memloc - 9 * regSize);
+						sprintf(buffer, "sw $v0, %d($fp)", t->child[0]->memloc);
 					emitCode(buffer);
 				}
 				/* Else if array */
@@ -136,7 +136,7 @@ static int genExpCode (TreeNode* t) {
 								retGlobal(t->child[0]->memloc, t->child[0]->len * sizeof(int)) );
 					/* Else if left operand is local */
 					else
-						sprintf(buffer, "addiu $v0, $fp, %d", t->child[0]->memloc - 9 * regSize);
+						sprintf(buffer, "addiu $v0, $fp, %d", t->child[0]->memloc);
 					emitCode(buffer);
 					sprintf(buffer, "add $v0, $v0, $s0");
 					emitCode(buffer);
@@ -181,7 +181,7 @@ static int genExpCode (TreeNode* t) {
 				if (t->isGlobal)
 					sprintf(buffer, "lw $v0, %d", retGlobal(t->memloc, sizeof(int)));
 				else
-					sprintf(buffer, "lw $v0, %d($fp)", (t->memloc - 9 * regSize));	
+					sprintf(buffer, "lw $v0, %d($fp)", t->memloc);	
 				emitCode(buffer);
 			}
 			else { 
@@ -195,7 +195,7 @@ static int genExpCode (TreeNode* t) {
 				if (t->isGlobal)
 					sprintf(buffer, "li $v0, %d", retGlobal(t->memloc, t->len * sizeof(int)) );
 				else
-					sprintf(buffer, "addiu $v0, $fp, %d", (t->memloc - 9 * regSize));
+					sprintf(buffer, "addiu $v0, $fp, %d", (t->memloc));
 				emitCode(buffer);
 				sprintf(buffer, "add $v0, $v0, $s0");
 				emitCode(buffer);
@@ -218,6 +218,8 @@ static int genExpCode (TreeNode* t) {
 				emitCode(buffer);
 				sprintf(buffer, "syscall");
 				emitCode(buffer);
+				sprintf(buffer, "move $v0, $t0");
+				emitCode(buffer);
 				/* Generate arguemtn code */
 				cGen(t->child[0]);
 				sprintf(buffer, "move $a0, $v0");
@@ -234,7 +236,7 @@ static int genExpCode (TreeNode* t) {
 				sprintf(buffer, "syscall");
 				emitCode(buffer);
 			}
-			if (strcmp(t->attr.name, "input") == 0) {
+			else if (strcmp(t->attr.name, "input") == 0) {
 				emitComment("Input procedure");
 				sprintf(buffer, "li $v0, 4");
 				emitCode(buffer);
@@ -245,6 +247,21 @@ static int genExpCode (TreeNode* t) {
 				sprintf(buffer, "li $v0, 5");
 				emitCode(buffer);
 				sprintf(buffer, "syscall");
+				emitCode(buffer);
+			}
+			else {
+				TreeNode* arg = NULL;
+				for (arg = t->child[0]; arg != NULL; arg = arg->sibling) {
+					genExpCode(arg);
+					sprintf(buffer, "addiu $sp, $sp, -4");
+					emitCode(buffer);
+					sprintf(buffer, "sw $v0, 0($sp)");
+					emitCode(buffer);
+					current_stack += 4;
+				}
+				sprintf(buffer, "jal %s", t->attr.name);
+				emitCode(buffer);
+				sprintf(buffer, "addiu $sp, %d", current_stack);
 				emitCode(buffer);
 			}
 			break;
