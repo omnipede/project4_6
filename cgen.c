@@ -209,11 +209,33 @@ static int genExpCode (TreeNode* t) {
 			break;
 		case CallK:
 			if (strcmp(t->attr.name, "output") == 0) {
-
+				emitComment("Output procedure");
+				sprintf(buffer, "move $t0, $v0");
+				emitCode(buffer);
+				sprintf(buffer, "li $v0, 4");
+				emitCode(buffer);
+				sprintf(buffer, "la $a0, output_str");
+				emitCode(buffer);
+				sprintf(buffer, "syscall");
+				emitCode(buffer);
+				/* Generate arguemtn code */
+				cGen(t->child[0]);
+				sprintf(buffer, "move $a0, $v0");
+				emitCode(buffer);
+				sprintf(buffer, "li $v0, 1");
+				emitCode(buffer);
+				sprintf(buffer, "syscall");
+				emitCode(buffer);
+				
+				sprintf(buffer, "li $v0, 4");
+				emitCode(buffer);
+				sprintf(buffer, "la $a0, newline");
+				emitCode(buffer);
+				sprintf(buffer, "syscall");
+				emitCode(buffer);
 			}
 			if (strcmp(t->attr.name, "input") == 0) {
-				sprintf(buffer, "input: ");
-				emitCode(buffer);
+				emitComment("Input procedure");
 				sprintf(buffer, "li $v0, 4");
 				emitCode(buffer);
 				sprintf(buffer, "la $a0, input_str");
