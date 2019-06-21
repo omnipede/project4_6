@@ -20,11 +20,6 @@ void main (void) {
 		req = input();
 		sol = func(req);
 		arr[i] = sol;
-		i = i + 1;
-	}
-
-	i = 0;
-	while ( i < 3) {
 		output(arr[i]);
 		i = i + 1;
 	}
