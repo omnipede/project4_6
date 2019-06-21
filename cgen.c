@@ -221,7 +221,7 @@ static int genExpCode (TreeNode* t) {
 				emitCode(buffer);
 				sprintf(buffer, "li $v0, 4");
 				emitCode(buffer);
-				sprintf(buffer, "la $a0, output_str");
+				sprintf(buffer, "la $a0, output_message");
 				emitCode(buffer);
 				sprintf(buffer, "syscall");
 				emitCode(buffer);
@@ -238,7 +238,7 @@ static int genExpCode (TreeNode* t) {
 				
 				sprintf(buffer, "li $v0, 4");
 				emitCode(buffer);
-				sprintf(buffer, "la $a0, newline");
+				sprintf(buffer, "la $a0, newline_character");
 				emitCode(buffer);
 				sprintf(buffer, "syscall");
 				emitCode(buffer);
@@ -247,7 +247,7 @@ static int genExpCode (TreeNode* t) {
 				emitComment("Input procedure");
 				sprintf(buffer, "li $v0, 4");
 				emitCode(buffer);
-				sprintf(buffer, "la $a0, input_str");
+				sprintf(buffer, "la $a0, input_message");
 				emitCode(buffer);
 				sprintf(buffer, "syscall");
 				emitCode(buffer);
@@ -435,12 +435,11 @@ void codeGen (TreeNode* syntaxTree, char* codefile) {
 		return;
 
 	emitCode(".data");
-	emitCode("newline: .asciiz \"\\n\"");
-	emitCode("output_str: .asciiz \"Output : \"");
-	emitCode("input_str: .asciiz \"Input : \"");
+	emitCode("output_message: .asciiz \"Output : \"");
+	emitCode("input_message: .asciiz \"Input : \"");
+	emitCode("newline_character: .asciiz \"\\n\"");
 
 	emitCode("\n.text");
-
 	cGen(syntaxTree);
 	return;
 }
