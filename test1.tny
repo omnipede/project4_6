@@ -9,6 +9,10 @@ void main (void) {
 	int x;
 
 	x = input();
+
+	if (x > 100)
+		x = 100;
+
 	i = 0;
 	while(i < x) {
 		globalArray[i] = func(i);
