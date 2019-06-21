@@ -4,6 +4,7 @@
 #include "cgen.h"
 
 static int regSize = 4;
+static int clean_label = 0;
 static char buffer[100];
 
 static int cGen(TreeNode*);
@@ -93,6 +94,12 @@ static int genStmtCode (TreeNode* t) {
 			cGen(t->child[0]);
 			sprintf(buffer, "bnez $v0, L%d", L_loop);
 			emitCode(buffer);
+			break;
+
+		/* Return statement. */
+		case ReturnK:
+			cGen(t->child[0]);
+			sprintf(buffer, "j L%d", clean_label);
 			break;
 		default: ;
 	}
@@ -274,7 +281,6 @@ static int genExpCode (TreeNode* t) {
 static int genDeclCode (TreeNode* t) {
 	
 	int i;
-	int clean_label = 0;
 	int current_stack = 0;
 	if (t == NULL) 
 		return current_stack;
