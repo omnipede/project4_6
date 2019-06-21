@@ -258,17 +258,16 @@ static int genExpCode (TreeNode* t) {
 			}
 			else {
 				TreeNode* arg = NULL;
+				int i = -1;
 				for (arg = t->child[0]; arg != NULL; arg = arg->sibling) {
+					i = i + 1;
+				}
+				for (arg = t->child[0]; arg != NULL && i >=0; arg = arg->sibling, i = i - 1) {
 					genExpCode(arg);
-					sprintf(buffer, "addiu $sp, $sp, -4");
+					sprintf(buffer, "move $a%d, $v0", i);
 					emitCode(buffer);
-					sprintf(buffer, "sw $v0, 0($sp)");
-					emitCode(buffer);
-					current_stack += 4;
 				}
 				sprintf(buffer, "jal %s", t->attr.name);
-				emitCode(buffer);
-				sprintf(buffer, "addiu $sp, %d", current_stack);
 				emitCode(buffer);
 			}
 			break;
@@ -298,7 +297,7 @@ static int genDeclCode (TreeNode* t) {
 			else {
 				/* Local variable declaration */
 				if (t->child[0]->type != Array) {
-					sprintf(buffer, "addiu $sp, $sp, %d", -sizeof(int));
+					sprintf(buffer, "addiu $sp, $sp, %d", -4);
 					emitCode(buffer);
 					current_stack += sizeof(int);
 				}
@@ -321,6 +320,15 @@ static int genDeclCode (TreeNode* t) {
 
 			/* Allocate stack frame */
 			emitComment("Stack frame allocation");
+
+			/* save arguments */
+			sprintf(buffer, "addiu $sp, $sp, %d", -4 * regSize);
+			emitCode(buffer);
+			for (i = 0; i < 4; i++) {
+				sprintf(buffer, "sw $a%d, %d($sp)", i, i * regSize);
+				emitCode(buffer);
+			}
+
 			sprintf(buffer, "addiu $sp, $sp, %d", -10 * regSize);
 			emitCode(buffer);
 
@@ -351,7 +359,7 @@ static int genDeclCode (TreeNode* t) {
 			sprintf(buffer, "L%d:", clean_label);
 			emitCode(buffer);
 			/* Set sp to end of stack frame */
-			sprintf(buffer, "addiu $sp, $fp, %d\n", -10 * regSize);
+			sprintf(buffer, "addiu $sp, $fp, %d", -10 * regSize);
 			emitCode(buffer);
 			/* Recover fp */
 			sprintf(buffer, "lw $fp, %d($sp)", 0 * regSize);
@@ -366,6 +374,14 @@ static int genDeclCode (TreeNode* t) {
 			emitCode(buffer);
 			/* Recover stack frame */
 			sprintf(buffer, "addiu $sp, $sp, %d", 10 * regSize);
+			emitCode(buffer);
+
+			/* Recover arguments */
+			for (i = 0; i < 4; i++) {
+				sprintf(buffer, "lw $a%d, %d($sp)", i, i * regSize);
+				emitCode(buffer);
+			}
+			sprintf(buffer, "addiu $sp, $sp, %d", 4 * regSize);
 			emitCode(buffer);
 
 			/* Return to caller. */
