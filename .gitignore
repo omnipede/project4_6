@@ -6,3 +6,5 @@ cm.tab.h
 cm.output
 lex.yy.c
 *.tm
+*.s
+main_prog
