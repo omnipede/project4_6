@@ -11,14 +11,6 @@ static int cGen(TreeNode*);
 
 static int allocGlobal (int inc) {
 	static int ret = 0x10000000;
-	/*
-	if (inc >= 0) {
-		ret += inc;
-		return ret - inc;
-	}
-	else {
-		return ret;
-	}*/
 	ret += inc;
 	return ret - inc;
 }
@@ -100,6 +92,7 @@ static int genStmtCode (TreeNode* t) {
 		case ReturnK:
 			cGen(t->child[0]);
 			sprintf(buffer, "j L%d", clean_label);
+			emitCode(buffer);
 			break;
 		default: ;
 	}
