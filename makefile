@@ -40,4 +40,4 @@ lex.yy.c: tiny.l
 	flex tiny.l
 
 clean:
-	rm -rf *.o $(TARGET) lex.yy.c cm.tab.c cm.tab.h cm.output test1.tm test2.tm test1.s test2.s
+	rm -rf *.o $(TARGET) lex.yy.c cm.tab.c cm.tab.h cm.output *.tm *.s
