@@ -18,10 +18,10 @@ symtab.o: cm.tab.h symtab.c
 analyze.o: cm.tab.h analyze.c
 	$(CC) $(CFLAGS) analyze.c
 
-code.o: code.c
+code.o: cm.tab.h code.c
 	$(CC) $(CFLAGS) code.c
 
-cgen.o: cgen.c
+cgen.o: cm.tab.h cgen.c
 	$(CC) $(CFLAGS) cgen.c
 
 cm.tab.o: cm.tab.c
